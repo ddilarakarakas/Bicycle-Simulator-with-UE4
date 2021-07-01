@@ -36,6 +36,9 @@ public:
 	UPROPERTY(EditAnywhere)
 		class AActor* SpecificActor;
 
+	SerialPort* card;
+	
+	int times = 0;
 };
 
 

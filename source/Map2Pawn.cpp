@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Map2Pawn.h"
 #include "Map2WheelFront.h"
@@ -20,6 +20,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/PlayerController.h"
 #include <iostream>
+#include <windows.h>
 #include "USerial.h"
 #include "MyTriggerBox.h"
 #include <stdio.h>
@@ -28,7 +29,7 @@
 #include <stdlib.h>
 using namespace std;
 
-char portName[30] = "\\\\.\\COM7";
+char portName[30] = "\\\\.\\COM";
 #define MAX_DATA_LENGTH 255
 const unsigned int BLINKING_DELAY = 1000;
 char incomingData[MAX_DATA_LENGTH];
@@ -37,6 +38,10 @@ SerialPort* stm32;
 char ledON1[] = "Yokus\n";
 char ledOFF1[] = "OFF\n";
 int isStart = 0;
+int sa = 0;
+int so = 0;
+int32 nabiz_int = 0;
+int port = 0;
 #ifndef HMD_MODULE_INCLUDED
 #define HMD_MODULE_INCLUDED 0
 #endif
@@ -103,7 +108,7 @@ AMap2Pawn::AMap2Pawn()
 
 	// Engine 
 	// Torque setup
-	Vehicle4W->MaxEngineRPM = 5700.0f;
+	//Vehicle4W->MaxEngineRPM = 5700.0f;
 	Vehicle4W->EngineSetup.TorqueCurve.GetRichCurve()->Reset();
 	Vehicle4W->EngineSetup.TorqueCurve.GetRichCurve()->AddKey(0.0f, 400.0f);
 	Vehicle4W->EngineSetup.TorqueCurve.GetRichCurve()->AddKey(1890.0f, 500.0f);
@@ -123,7 +128,7 @@ AMap2Pawn::AMap2Pawn()
 	Vehicle4W->DifferentialSetup.FrontRearSplit = 0.65;
 
 	//Vehicle4W->MaxEngineRPM = 17029.577637f;
-	//Vehicle4W->EngineSetup.MaxRPM = 1029.577637f;
+	Vehicle4W->EngineSetup.MaxRPM = 1029.577;
 
 	// Automatic gearbox
 	Vehicle4W->TransmissionSetup.bUseGearAutoBox = true;
@@ -209,15 +214,15 @@ void AMap2Pawn::SetupPlayerInputComponent(class UInputComponent* PlayerInputComp
 	// set up gameplay key bindings
 	check(PlayerInputComponent);
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &AMap2Pawn::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMap2Pawn::MoveRight);
+	//PlayerInputComponent->BindAxis("MoveForward", this, &AMap2Pawn::MoveForward);
+	//PlayerInputComponent->BindAxis("MoveRight", this, &AMap2Pawn::MoveRight);
 	PlayerInputComponent->BindAxis(LookUpBinding);
 	PlayerInputComponent->BindAxis(LookRightBinding);
 
 	PlayerInputComponent->BindAction("Handbrake", IE_Pressed, this, &AMap2Pawn::OnHandbrakePressed);
 	PlayerInputComponent->BindAction("Handbrake", IE_Released, this, &AMap2Pawn::OnHandbrakeReleased);
 	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &AMap2Pawn::OnToggleCamera);
-
+	PlayerInputComponent->BindAction("open", IE_Pressed, this, &AMap2Pawn::openCom);
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AMap2Pawn::OnResetVR); 
 }
 
@@ -234,6 +239,8 @@ void AMap2Pawn::MoveForward(float Val)
 		GetVehicleMovementComponent()->SetThrottleInput(Val);
 	}*/
 	//GetVehicleMovementComponent()->SetGearUp(true);
+	FString Fs = FString::SanitizeFloat(Val);
+	UE_LOG(LogTemp, Log, TEXT("%s"), *Fs);
 	GetVehicleMovementComponent()->SetThrottleInput(Val);
 
 }
@@ -287,7 +294,8 @@ void AMap2Pawn::Tick(float Delta)
 
 	// Setup the flag to say we are in reverse gear
 	bInReverseGear = GetVehicleMovement()->GetCurrentGear() < 0;
-	
+	//FString Fs5 = FString::SanitizeFloat((float)comPort);
+	//UE_LOG(LogTemp, Log, TEXT("gear: %s"), *Fs5);
 	// Update phsyics material
 	UpdatePhysicsMaterial();
 
@@ -320,29 +328,80 @@ void AMap2Pawn::Tick(float Delta)
 	// Pass the engine RPM to the sound component
 	//float RPMToAudioScale = 2500.0f / GetVehicleMovement()->GetEngineMaxRotationSpeed();
 	//EngineSoundComponent->SetFloatParameter(EngineAudioRPM, GetVehicleMovement()->GetEngineRotationSpeed()*RPMToAudioScale);
+
+	if (comPort != 0) {
+		/*char com[50];
+		sprintf(com, "\\\\.\\COM%d", comPort);
+		//strcat(portName, com);
+		FString Fs = FString(ANSI_TO_TCHAR(com));
+		UE_LOG(LogTemp, Log, TEXT("port:%s"),*Fs);
+		stm32 = new SerialPort(com);
+
+		if (stm32->isConnected()) {
+			UE_LOG(LogTemp, Log, TEXT("Connected!!"));
+			isStart = 1;
+		}
+		else {
+			UE_LOG(LogTemp, Log, TEXT("NOT Connected!!"));
+		}
+
+		if (isStart)
+		{
+			for (TObjectIterator<AMyTriggerBox> It; It; ++It)
+			{
+				It->card = stm32;
+			}
+		}*/
+		port = comPort;
+		comPort = 0;
+
+	}
 	
-	/*if (isStart){
-		exampleReceiveData();
-	}*/
+	if (isStart){
+		exampleReceiveData(Delta);
+	}
 	
 }
 
 void AMap2Pawn::BeginPlay()
 {
+	FString Fs5 = FString::SanitizeFloat((float)port);
+	UE_LOG(LogTemp, Log, TEXT("porrt: %s"), *Fs5);
 	Super::BeginPlay();
+	FString Fs6 = FString::SanitizeFloat((float)port);
+	UE_LOG(LogTemp, Log, TEXT("porrt: %s"), *Fs6);
 	bool bWantInCar = false;
+	steerString = 0.0;
 	// First disable both speed/gear displays 
 	bInCarCameraActive = false;
 	InCarSpeed->SetVisibility(bInCarCameraActive);
 	InCarGear->SetVisibility(bInCarCameraActive);
-	stm32 = new SerialPort(portName);
-	if (stm32->isConnected()) {
-		UE_LOG(LogTemp, Log, TEXT("Connected!!"));
-		isStart = 1;
+	if (port != 0) {
+		char com[50];
+		sprintf(com, "\\\\.\\COM%d", port);
+		//strcat(portName, com);
+		FString Fs = FString(ANSI_TO_TCHAR(com));
+		UE_LOG(LogTemp, Log, TEXT("port:%s"), *Fs);
+		stm32 = new SerialPort(com);
+
+		if (stm32->isConnected()) {
+			UE_LOG(LogTemp, Log, TEXT("Connected!!"));
+			isStart = 1;
+		}
+		else {
+			UE_LOG(LogTemp, Log, TEXT("NOT Connected!!"));
+		}
+
+		if (isStart)
+		{
+			for (TObjectIterator<AMyTriggerBox> It; It; ++It)
+			{
+				It->card = stm32;
+			}
+		}
 	}
-	else {
-		UE_LOG(LogTemp, Log, TEXT("NOT Connected!!"));
-	}
+
+	
 	// Enable in car view if HMD is attached
 #if HMD_MODULE_INCLUDED
 	bWantInCar = UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled();
@@ -358,7 +417,8 @@ void AMap2Pawn::BeginPlay()
 
 void AMap2Pawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	stm32->closeSerial();
+	if (isStart == 1) 
+		stm32->closeSerial();
 }
 
 void AMap2Pawn::OnResetVR()
@@ -373,23 +433,186 @@ void AMap2Pawn::OnResetVR()
 #endif // HMD_MODULE_INCLUDED
 }
 
-void AMap2Pawn::exampleReceiveData(void)
-{
-	char signal[] = "hizlan";
-	int readResult = stm32->readSerialPort(incomingData, MAX_DATA_LENGTH);
-	if (strstr(incomingData,signal))
-	{
-		//UE_LOG(LogTemp, Log, TEXT("data geldi!!"));
-		float KPH = FMath::Abs(GetVehicleMovement()->GetForwardSpeed()) * 0.036f;
-		if (KPH == 0)
-		{
-			KPH = 100.0f;
-		}
-		MoveForward(KPH);
+void AMap2Pawn::openCom() {
+	char com[50];
+	sprintf(com, "\\\\.\\COM%d", port);
+	//strcat(portName, com);
+	FString Fs = FString(ANSI_TO_TCHAR(com));
+	UE_LOG(LogTemp, Log, TEXT("port:%s"), *Fs);
+	stm32 = new SerialPort(com);
+
+	if (stm32->isConnected()) {
+		UE_LOG(LogTemp, Log, TEXT("Connected!!"));
+		isStart = 1;
 	}
+	else {
+		UE_LOG(LogTemp, Log, TEXT("NOT Connected!!"));
+	}
+
+	if (isStart)
+	{
+		for (TObjectIterator<AMyTriggerBox> It; It; ++It)
+		{
+			It->card = stm32;
+		}
+	}
+	
+}
+
+void AMap2Pawn::exampleReceiveData(float delta)
+{
+	char signal1[] = "hiz";
+	char signal2[] = "geri";
+	char signal3[] = "sag";
+	char signal4[] = "sol";
+	char signal5[] = "duz";
+	char signal6[] = "pulse";
+	char signal7[] = "";
+	char signal8[] = ".";
+	char signal9[] = "yon";
+	char pulse[10];
+	char yon[10];
+
+	int readResult = stm32->readSerialPort(incomingData, MAX_DATA_LENGTH);
+	//nabiz_int = atoi(incomingData);
+	if (strstr(incomingData, signal1))
+	{
+		//UE_LOG(LogTemp, Log, TEXT("ileri"));
+		GetVehicleMovementComponent()->SetThrottleInput(1.0);
+
+	}
+	if (strstr(incomingData, signal2))
+	{
+		UE_LOG(LogTemp, Log, TEXT("geri"));
+		GetVehicleMovementComponent()->SetThrottleInput(-1.0);
+
+	}
+	if (strstr(incomingData, signal3) && !sa)
+	{
+		UE_LOG(LogTemp, Log, TEXT("sag"));
+		GetVehicleMovementComponent()->SetSteeringInput(0.20);
+		sa = 1;
+		steerString = 1.0;
+
+	}
+	if (strstr(incomingData, signal4) && !so)
+	{
+		UE_LOG(LogTemp, Log, TEXT("sol"));
+		GetVehicleMovementComponent()->SetSteeringInput(-0.20);
+		so = 1;
+		steerString = -1.0;
+
+	}
+	if (strstr(incomingData, signal5))
+	{
+		//UE_LOG(LogTemp, Log, TEXT("ileri"));
+		//GetVehicleMovementComponent()->SetThrottleInput(1.0);
+		sa = 0;
+		so = 0;
+		GetVehicleMovementComponent()->SetSteeringInput(0.0);
+		steerString = 0.0;
+
+	}
+	if (strstr(incomingData, signal6) && strstr(incomingData, signal8))
+	{
+		
+		char* pos = strstr(incomingData, "pulse");
+		FString Fs2 = FString(ANSI_TO_TCHAR(pos));
+		UE_LOG(LogTemp, Log, TEXT("pos:%s"),*Fs2);
+		strncpy(pulse, pos + 5, 5);
+		nabiz_int = atoi(pulse);
+		/*FString Fs = FString::SanitizeFloat((float)nabiz_int);
+		UE_LOG(LogTemp, Log, TEXT("nabiz: %s"), *Fs);
+		if (nabiz_int < 200)
+		{
+			UE_LOG(LogTemp, Log, TEXT("sol"));
+
+			//FString Fs = FString::SanitizeFloat((float)nabiz_int);
+			//UE_LOG(LogTemp, Log, TEXT("nabiz: %s"), *Fs);
+			GetVehicleMovementComponent()->SetSteeringInput(-0.20);
+			so = 1;
+			steerString = -1.0;
+		}
+		if (nabiz_int > 3000)
+		{
+			UE_LOG(LogTemp, Log, TEXT("sag"));
+			GetVehicleMovementComponent()->SetSteeringInput(0.20);
+			sa = 1;
+			steerString = 1.0;
+		}
+		if(nabiz_int > 200 && nabiz_int < 3000)
+		{
+			UE_LOG(LogTemp, Log, TEXT("duz"));
+			GetVehicleMovementComponent()->SetSteeringInput(0.0);
+			sa = 0;
+			so = 0;
+			steerString = 0.0;
+		}*/
+	}
+	if (strstr(incomingData, signal9) && strstr(incomingData, signal8))
+	{
+		char* pos = strstr(incomingData, "yon");
+		FString Fs2 = FString(ANSI_TO_TCHAR(pos));
+		UE_LOG(LogTemp, Log, TEXT("pos:%s"), *Fs2);
+		strncpy(yon, pos + 3, 5);
+		int value = atoi(yon);
+		FString Fs = FString::SanitizeFloat((float)value);
+		UE_LOG(LogTemp, Log, TEXT("nabiz: %s"), *Fs);
+		if (value > 2100)
+		{
+			UE_LOG(LogTemp, Log, TEXT("sol"));
+
+			//FString Fs = FString::SanitizeFloat((float)nabiz_int);
+			//UE_LOG(LogTemp, Log, TEXT("nabiz: %s"), *Fs);
+			float donus = (1100.0 * 90.0) / ((float)value * 100.0);
+			FString Fs3 = FString::SanitizeFloat(donus);
+			UE_LOG(LogTemp, Log, TEXT("donus: %s"), *Fs3);
+			GetVehicleMovementComponent()->SetSteeringInput((donus-0.45));
+			so = 1;
+			steerString = donus-0.45;
+		}
+		if (value < 2100)
+		{
+			UE_LOG(LogTemp, Log, TEXT("sag"));
+			float donus = (1100.0 * 90.0) / ((float)value * 100.0);
+			FString Fs3 = FString::SanitizeFloat(donus);
+			UE_LOG(LogTemp, Log, TEXT("donus: %s"), *Fs3);
+			GetVehicleMovementComponent()->SetSteeringInput(donus-0.45);
+			sa = 1;
+			steerString = donus - 0.45;
+		}
+		/*if(value > 200 && value < 3000)
+		{
+			UE_LOG(LogTemp, Log, TEXT("duz"));
+			GetVehicleMovementComponent()->SetSteeringInput(0.0);
+			sa = 0;
+			so = 0;
+			steerString = 0.0;
+		}*/
+
+	}
+	float KPH = FMath::Abs(GetVehicleMovement()->GetForwardSpeed()) * 0.036f;
+	int32 KPH_int = FMath::FloorToInt(KPH);
+	/*if ((KPH_int > 3) && ((KPH_int % 5 == 0) || (KPH_int >= 16)) && strstr(incomingData, signal7))
+	{
+		//FString Fs = FString::SanitizeFloat(delta);
+		//UE_LOG(LogTemp, Log, TEXT("delta: %s"), *Fs);
+		UE_LOG(LogTemp, Log, TEXT("empty"));
+		GetVehicleMovementComponent()->SetThrottleInput(0.0);
+		GetVehicleMovementComponent()->SetSteeringInput(0.0);
+	}*/
+	if (KPH_int >= 16)
+	{
+		//FString Fs = FString::SanitizeFloat(delta);
+		//UE_LOG(LogTemp, Log, TEXT("delta: %s"), *Fs);
+		//UE_LOG(LogTemp, Log, TEXT("empty"));
+		//GetVehicleMovementComponent()->SetThrottleInput(0.0);
+	}
+
+
 	//FString fs(incomingData);
-	FString Fs = FString(ANSI_TO_TCHAR(incomingData));
-	UE_LOG(LogTemp, Log, TEXT("%s"),*Fs);
+	//FString Fs = FString(ANSI_TO_TCHAR(incomingData));
+	//UE_LOG(LogTemp, Log, TEXT("%s"),*Fs);
 }
 
 void AMap2Pawn::exampleWriteData(unsigned int delayTime)
@@ -408,9 +631,12 @@ void AMap2Pawn::UpdateHUDStrings()
 	int32 Gear = GetVehicleMovement()->GetCurrentGear();
 
 	// Using FText because this is display text that should be localizable
-	SpeedDisplayString = FText::Format(LOCTEXT("SpeedFormat", "{0} km/h"), FText::AsNumber(KPH_int));
+	SpeedDisplayString = FText::Format(LOCTEXT("SpeedFormat", "Your Speed: {0} km/h"), FText::AsNumber(KPH_int));
+	NabizString = FText::Format(LOCTEXT("SpeedFormat", "Your Pulse: {0}"), FText::AsNumber(nabiz_int));
+	
 
-
+	/*if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Some debug message!"));
 	if (bInReverseGear == true)
 	{
 		GearDisplayString = FText(LOCTEXT("ReverseGear", "R"));
@@ -418,7 +644,7 @@ void AMap2Pawn::UpdateHUDStrings()
 	else
 	{
 		GearDisplayString = (Gear == 0) ? LOCTEXT("N", "N") : FText::AsNumber(Gear);
-	}
+	}*/
 
 }
 

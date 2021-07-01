@@ -46,14 +46,32 @@ void AMap2Hud::DrawHUD()
 			FVector2D ScaleVec(HUDYRatio * 1.4f, HUDYRatio * 1.4f);
 
 			// Speed
-			FCanvasTextItem SpeedTextItem(FVector2D(HUDXRatio * 805.f, HUDYRatio * 455), Vehicle->SpeedDisplayString, HUDFont, FLinearColor::White);
+			FCanvasTextItem SpeedTextItem(FVector2D(HUDXRatio * 950.f, HUDYRatio * 55), Vehicle->SpeedDisplayString, HUDFont, FLinearColor::White);
 			SpeedTextItem.Scale = ScaleVec;
 			Canvas->DrawItem(SpeedTextItem);
 
+			//Nabiz
+			FCanvasTextItem PulseTextItem(FVector2D(HUDXRatio * 950.f, HUDYRatio * 100), Vehicle->NabizString, HUDFont, FLinearColor::Yellow);
+			PulseTextItem.Scale = ScaleVec;
+			Canvas->DrawItem(PulseTextItem);
+
 			// Gear
-			FCanvasTextItem GearTextItem(FVector2D(HUDXRatio * 805.f, HUDYRatio * 500.f), Vehicle->GearDisplayString, HUDFont, Vehicle->bInReverseGear == false ? Vehicle->GearDisplayColor : Vehicle->GearDisplayReverseColor);
+			/*FCanvasTextItem GearTextItem(FVector2D(HUDXRatio * 1000.f, HUDYRatio * 100.f), Vehicle->GearDisplayString, HUDFont, Vehicle->bInReverseGear == false ? Vehicle->GearDisplayColor : Vehicle->GearDisplayReverseColor);
 			GearTextItem.Scale = ScaleVec;
-			Canvas->DrawItem(GearTextItem);
+			Canvas->DrawItem(GearTextItem);*/
+		}
+		else if ((Vehicle != nullptr) && (Vehicle->bInCarCameraActive == true)) {
+			FVector2D ScaleVec(HUDYRatio * 1.4f, HUDYRatio * 1.4f);
+
+			// Speed
+			FCanvasTextItem SpeedTextItem(FVector2D(HUDXRatio * 950.f, HUDYRatio * 55), Vehicle->SpeedDisplayString, HUDFont, FLinearColor::White);
+			SpeedTextItem.Scale = ScaleVec;
+			Canvas->DrawItem(SpeedTextItem);
+
+			//Nabiz
+			FCanvasTextItem PulseTextItem(FVector2D(HUDXRatio * 950.f, HUDYRatio * 100), Vehicle->NabizString, HUDFont, FLinearColor::Yellow);
+			PulseTextItem.Scale = ScaleVec;
+			Canvas->DrawItem(PulseTextItem);
 		}
 	}
 }

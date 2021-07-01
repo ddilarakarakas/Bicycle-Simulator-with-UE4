@@ -55,6 +55,17 @@ public:
 	/** The current speed as a string eg 10 km/h */
 	UPROPERTY(Category = Display, VisibleDefaultsOnly, BlueprintReadOnly)
 	FText SpeedDisplayString;
+	
+
+
+	UPROPERTY(Category = Display, VisibleDefaultsOnly, BlueprintReadOnly)
+		FText NabizString;
+
+	UPROPERTY(Category = Display, VisibleDefaultsOnly, BlueprintReadOnly)
+		float steerString;
+
+	UPROPERTY(Category = "Public", VisibleDefaultsOnly, BlueprintReadWrite)
+		int comPort = 0;
 
 	/** The current gear as a string (R,N, 1,2 etc) */
 	UPROPERTY(Category = Display, VisibleDefaultsOnly, BlueprintReadOnly)
@@ -113,9 +124,10 @@ public:
 	void OnToggleCamera();
 	/** Handle reset VR device */
 	void OnResetVR();
-	void exampleReceiveData(void);
+	void exampleReceiveData(float delta);
 	void exampleWriteData(unsigned int delayTime);
 	void* getSerial();
+	void openCom();
 
 	static const FName LookUpBinding;
 	static const FName LookRightBinding;
