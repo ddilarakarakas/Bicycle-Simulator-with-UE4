@@ -18,7 +18,7 @@
 - Furkan Çelen
 - Mert Can Beşirli
 
-#### Simulation [Video](https://www.youtube.com/watch?v=Z_iCmttZUxY)
-#### Hardware and Mechanics [Video](https://www.youtube.com/watch?v=XFolkMuCgHc)
+### Simulation [Video](https://www.youtube.com/watch?v=Z_iCmttZUxY)
+### Hardware and Mechanics [Video](https://www.youtube.com/watch?v=XFolkMuCgHc)
 
 
